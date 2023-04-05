@@ -19,10 +19,10 @@ SEED : int = 42
 
 def split_dataset(
     index_file_path: str,
-    num_train_sky: int = 2000,
-    num_train_no_sky: int = 500,
-    num_val_sky: int = 200,
-    num_val_no_sky: int = 50,
+    num_train_sky: int = 150,
+    num_train_no_sky: int = 50,
+    num_val_sky: int = 80,
+    num_val_no_sky: int = 20,
     ) -> tuple[np.ndarray, np.ndarray, int]:
     """
     Splits the ADE20K dataset into training and validation sets with a specified number of images.
