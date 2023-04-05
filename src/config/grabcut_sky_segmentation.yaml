@@ -1,0 +1,6 @@
+resize_width: 512
+resize_height: 512
+blue_hue_min_value: 100
+blue_hue_max_value: 130
+kernel_size_mask_erode: 30
+max_distance: 30
