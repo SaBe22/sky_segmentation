@@ -1,14 +1,13 @@
 import argparse
 import copy
 import os
+
 import albumentations as A
 import mlflow
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
-import yaml
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -20,20 +19,14 @@ from prepare_ade20k_dataset import (DEFAULT_TRAIN_IMAGE_FOLDER,
                                     DEFAULT_VAL_IMAGE_FOLDER,
                                     DEFAULT_VAL_MASK_FOLDER)
 from segmentation_metrics import dice, iou
+from utils import (  # Default model parameters: normalization and resize parameters
+    DEFAULT_IMG_HEIGHT, DEFAULT_IMG_WIDTH, DEFAULT_MODEL_NAME,
+    DEFAULT_NUM_CLASSES, DEFAULT_PRETRAINED_WEIGHTS, NORMALIZE_MEAN,
+    NORMALIZE_STD, load_config_file)
 
 # Default folder used to save the trained model
 DEFAULT_SAVE_FOLDER: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), r"../results")
 
-# Default model initialization parameters
-DEFAULT_MODEL_NAME: str = "deeplabv3_mobilenetv3"
-DEFAULT_NUM_CLASSES: int = 1
-DEFAULT_PRETRAINED_WEIGHTS: str = "DEFAULT"
-# Normalization parameters for backbone
-NORMALIZE_MEAN: list[float] = [0.485, 0.456, 0.406]
-NORMALIZE_STD: list[float] = [0.229, 0.224, 0.225]
-# Default resize parameters
-DEFAULT_IMG_WIDTH: int = 520
-DEFAULT_IMG_HEIGHT: int = 520
 # Default training parameters
 DEFAULT_NUM_EPOCHS: int = 5
 DEFAULT_BATCH_SIZE: int = 16
@@ -105,7 +98,8 @@ def evaluate_fn(
         device (torch.device, optional): The device to run the model on. Default is CPU.
 
     Returns:
-        tuple[float, float, float]: A tuple containing the validation loss, IoU score, and Dice score.
+        tuple[float, float, float]: A tuple containing the validation loss, IoU score
+            and Dice score.
     """
     model.eval()
     iou_score = 0
@@ -132,21 +126,16 @@ def evaluate_fn(
 
 def main():
     """
-    Parse command line arguments, initialize the model, parameters, and hyperparameters, train the model,
-    and save the best model.
+    Parse command line arguments, initialize the model, parameters, and hyperparameters,
+    train the model, and save the best model.
     """
     args = parse_args()
 
     config_file = args.config_file
-    if config_file is None or os.path.splitext(config_file)[-1].lower() != ".yaml" or not os.path.exists(config_file):
-        # TODO: switch to logger
-        print(f"{config_file} is not a valid yaml file, default parameters will be used.")
-        config = {}
-    else:
-        with open(config_file, "r", encoding="utf-8") as yamlfile:
-            config = yaml.load(yamlfile, Loader=yaml.FullLoader)
+    config = load_config_file(config_file)
 
-    # Redundant but if the script is called with --train_image_folder empty the default value is not set
+    # Redundant but if the script is called with --train_image_folder empty
+    # the default value is not set
     train_image_folder = (args.train_image_folder if args.train_image_folder
         else DEFAULT_TRAIN_IMAGE_FOLDER)
     train_mask_folder = (args.train_mask_folder if args.train_mask_folder
@@ -157,7 +146,7 @@ def main():
         else DEFAULT_VAL_MASK_FOLDER)
 
     image_height = config.get("image_height", DEFAULT_IMG_HEIGHT)
-    image_width = config.get("image_width", DEFAULT_IMG_HEIGHT)
+    image_width = config.get("image_width", DEFAULT_IMG_WIDTH)
     train_transform = A.Compose(
         [
             A.Resize(height=image_height, width=image_width),
@@ -239,7 +228,9 @@ def main():
 
     min_val_loss = np.Inf
     best_segm_model = segmentation_model
-    mlflow.set_experiment(f"{model_name}_lr{learning_rate}_maxlr_{DEFAULT_MAX_LEARNING_RATE}_{num_epochs}")
+    mlflow.set_experiment(
+        f"{model_name}_lr{learning_rate}_maxlr_{DEFAULT_MAX_LEARNING_RATE}_{num_epochs}"
+    )
     mlflow.start_run()
     for epoch in range(num_epochs):
         train_loss = train_fn(train_loader, model, optimizer, criterion, scheduler, device=device)
@@ -254,15 +245,25 @@ def main():
 
     save_folder = (args.save_folder if args.save_folder
                    else DEFAULT_SAVE_FOLDER)
+
     if not os.path.exists(save_folder):
         os.mkdir(save_folder)
-    model_path = os.path.join(save_folder, f"{model_name}_lr{learning_rate}_maxlr_{DEFAULT_MAX_LEARNING_RATE}_{num_epochs}.pth")
+
+    model_path = os.path.join(
+        save_folder,
+        f"{model_name}_lr{learning_rate}_maxlr_{DEFAULT_MAX_LEARNING_RATE}_{num_epochs}.pth"
+    )
     best_segm_model.save(model_path)
     mlflow.log_artifact(model_path)
     mlflow.end_run()
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
+    """
+    Parse command line arguments and return the parsed arguments as a Namespace object.
+    Returns:
+        argparse.Namespace: Object containing the parsed arguments.
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--save_folder", type=str, default=DEFAULT_SAVE_FOLDER,

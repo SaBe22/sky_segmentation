@@ -7,7 +7,8 @@ import numpy as np
 from PIL import Image
 
 ADE20K_INDEX_FILE_NAME: str = "index_ade20k.pkl"
-DEFAULT_DATASET_FOLDER: str = os.path.join(os.path.dirname(os.path.abspath(__file__)), r"../datasets")
+DEFAULT_DATASET_FOLDER: str = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                           r"../datasets")
 DEFAULT_TRAIN_IMAGE_FOLDER: str = os.path.join(DEFAULT_DATASET_FOLDER, "train_images")
 DEFAULT_TRAIN_MASK_FOLDER: str = os.path.join(DEFAULT_DATASET_FOLDER, "train_masks")
 DEFAULT_VAL_IMAGE_FOLDER: str = os.path.join(DEFAULT_DATASET_FOLDER, "val_images")
@@ -36,8 +37,8 @@ def split_dataset(
         num_val_no_sky (int): Number of validation images without sky to extract.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray, int]: A tuple containing the training and validation sets as numpy arrays
-            and index of the "sky" class in the ADE20K dataset.
+        Tuple[np.ndarray, np.ndarray, int]: A tuple containing the training and validation sets
+            as numpy arrays and index of the "sky" class in the ADE20K dataset.
     """
     if os.path.basename(index_file_path) != ADE20K_INDEX_FILE_NAME:
         raise ValueError(f"The split_dataset method needs the path to the {ADE20K_INDEX_FILE_NAME} "
@@ -51,8 +52,9 @@ def split_dataset(
     # Retrieve the id for the object sky
     try:
         sky_id = np.where(np.array(index_data['objectnames']) == SKY_NAME_IN_ADE20K)[0][0]
-    except IndexError as ex:
-        raise IndexError(f"Object {SKY_NAME_IN_ADE20K} is not in objectnames of the ADE20K dataset")
+    except IndexError:
+        raise IndexError(f"Object {SKY_NAME_IN_ADE20K} is not in objectnames of the ADE20K "
+                         "dataset")
 
     #
     train_sky_image_path = []
@@ -109,7 +111,12 @@ def split_dataset(
     return train_image_path, val_image_path, sky_id
 
 
-def copy_images_and_masks(image_folder: str, mask_folder: str, subset_images: np.ndarray, sky_id: int) -> None:
+def copy_images_and_masks(
+    image_folder: str,
+    mask_folder: str,
+    subset_images: np.ndarray,
+    sky_id: int
+) -> None:
     """
     Copies the selected images and their corresponding masks to specified folders.
 
@@ -135,7 +142,7 @@ def copy_images_and_masks(image_folder: str, mask_folder: str, subset_images: np
         # Red pixels / 10 * 256 + Green pixels
         mask = (
             ((segmentation[:,:,0] / 10).astype(np.int32) * 256
-            + (segmentation[:,:,1].astype(np.int32))) == (sky_id + 1) # + 1 cause 0 encodes the lack of object
+            + (segmentation[:,:,1].astype(np.int32))) == (sky_id + 1)
             ).astype(np.uint8) * 255 # Set sky pixels to 255
 
         mask = Image.fromarray(mask)
@@ -147,6 +154,11 @@ def copy_images_and_masks(image_folder: str, mask_folder: str, subset_images: np
 
 
 def parse_args():
+    """
+    Parse command line arguments and return the parsed arguments as a Namespace object.
+    Returns:
+        argparse.Namespace: Object containing the parsed arguments.
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument("index_file_path", type=str,
@@ -171,6 +183,12 @@ def parse_args():
     return parser.parse_args()
 
 def main():
+    """
+    Parses the command-line arguments to determine the index file path,
+    train and validation image folders and train and validation mask folders.
+    Copies the images and masks from the original dataset to the specified folders
+    for training and validation purposes.
+    """
     args = parse_args()
 
     index_file_path = args.index_file_path
@@ -180,12 +198,16 @@ def main():
     train_image_path, val_image_path, sky_id = split_dataset(index_file_path)
 
     # Generate the train folder
-    train_image_folder = args.train_image_folder if args.train_image_folder else DEFAULT_TRAIN_IMAGE_FOLDER
-    train_mask_folder = args.train_mask_folder if args.train_mask_folder else DEFAULT_TRAIN_MASK_FOLDER
+    train_image_folder = (args.train_image_folder if args.train_image_folder
+                          else DEFAULT_TRAIN_IMAGE_FOLDER)
+    train_mask_folder = (args.train_mask_folder if args.train_mask_folder
+                         else DEFAULT_TRAIN_MASK_FOLDER)
     copy_images_and_masks(train_image_folder, train_mask_folder, train_image_path, sky_id)
 
-    val_image_folder = args.val_image_folder if args.val_image_folder else DEFAULT_VAL_IMAGE_FOLDER
-    val_mask_folder = args.val_mask_folder if args.val_mask_folder else DEFAULT_VAL_MASK_FOLDER
+    val_image_folder = (args.val_image_folder if args.val_image_folder
+                        else DEFAULT_VAL_IMAGE_FOLDER)
+    val_mask_folder = (args.val_mask_folder if args.val_mask_folder
+                       else DEFAULT_VAL_MASK_FOLDER)
     copy_images_and_masks(val_image_folder, val_mask_folder, val_image_path, sky_id)
 
 if __name__ == "__main__":

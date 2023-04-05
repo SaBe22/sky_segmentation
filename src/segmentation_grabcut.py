@@ -1,5 +1,3 @@
-import os
-
 import cv2
 import numpy as np
 
@@ -42,20 +40,16 @@ class SegmentationGrabCut:
             DEFAULT_KERNEL_SIZE_MASK_ERODE)
         self.max_distance = config.get("max_distance", DEFAULT_MAX_DISTANCE)
 
-    def segment(self, image_path: str) -> np.ndarray:
+    def segment(self, image: np.ndarray) -> np.ndarray:
         """
         Segment the sky region in the image using the GrabCut algorithm.
 
         Args:
-            image_path (str): path to the input image
+            image_path (np.ndarray): input image
 
         Returns:
             np.ndarray: Binary mask of the sky region after GrabCut segmentation.
         """
-        if not os.path.exists(image_path):
-            raise ValueError(f"{image_path} is not a valid image_path {os.getcwd()}")
-
-        image = cv2.imread(image_path)
         # Resize the image to a smaller size to speed up processing
         resized = cv2.resize(image, (self.resize_width, self.resize_height),
             interpolation=cv2.INTER_AREA)
@@ -101,10 +95,10 @@ class SegmentationGrabCut:
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         # Extract the H channel
-        H = hsv[:, :, 0]
+        hue_channel = hsv[:, :, 0]
 
         # Threshold the H channel to create a mask of blue pixels
-        blue_color_mask = cv2.inRange(H, self.blue_hue_min_value, self.blue_hue_max_value)
+        blue_color_mask = cv2.inRange(hue_channel, self.blue_hue_min_value, self.blue_hue_max_value)
 
         # Apply a median filter to remove isolated pixels or small regions
         blue_color_mask = cv2.medianBlur(blue_color_mask, 5)

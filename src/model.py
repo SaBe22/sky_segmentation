@@ -46,7 +46,8 @@ class SegmentationModel:
                                       "the following model {SUPPORTED_MODELS}")
 
         if self.model_name == "deeplabv3_mobilenetv3":
-            self._model = models.segmentation.deeplabv3_mobilenet_v3_large(weights=self.pretrained_weights)
+            self._model = models.segmentation.deeplabv3_mobilenet_v3_large(
+                weights=self.pretrained_weights)
         elif self.model_name == "deeplabv3_resnet50":
             self._model = models.segmentation.deeplabv3_resnet50(weights=self.pretrained_weights)
         elif self.model_name == "deeplabv3_resnet101":
