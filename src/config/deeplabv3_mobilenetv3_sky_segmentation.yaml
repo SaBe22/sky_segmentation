@@ -1,0 +1,9 @@
+batch_size: 8
+learning_rate: 0.0001
+max_learning_rate: 0.001
+num_epochs: 10
+resize_height: 520
+resize_width: 520
+model_name: "deeplabv3_mobilenetv3"
+num_classes: 1
+pretrained_weights: "DEFAULT"
