@@ -1,10 +1,9 @@
-import os
 import argparse
-import shutil
+import os
 import pickle
+import shutil
 
 import numpy as np
-
 from PIL import Image
 
 ADE20K_INDEX_FILE_NAME: str = "index_ade20k.pkl"
@@ -136,7 +135,7 @@ def copy_images_and_masks(image_folder: str, mask_folder: str, subset_images: np
         # Red pixels / 10 * 256 + Green pixels
         mask = (
             ((segmentation[:,:,0] / 10).astype(np.int32) * 256
-            + (segmentation[:,:,1].astype(np.int32))) == (sky_id + 1) # + 1 because 0 encodes the lack of object
+            + (segmentation[:,:,1].astype(np.int32))) == (sky_id + 1) # + 1 cause 0 encodes the lack of object
             ).astype(np.uint8) * 255 # Set sky pixels to 255
 
         mask = Image.fromarray(mask)
@@ -154,16 +153,20 @@ def parse_args():
                         help="Path to the index_ade20k.pkl file.")
 
     parser.add_argument("--train_image_folder", type=str, default=DEFAULT_TRAIN_IMAGE_FOLDER,
-                        help="Path to the folder where the training images will be stored.", nargs='?')
+                        help="Path to the folder where the training images will be stored.",
+                        nargs='?')
 
     parser.add_argument("--train_mask_folder", type=str, default=DEFAULT_TRAIN_MASK_FOLDER,
-                        help="Path to the folder where the training masks will be stored.", nargs='?')
+                        help="Path to the folder where the training masks will be stored.",
+                        nargs='?')
 
     parser.add_argument("--val_image_folder", type=str, default=DEFAULT_VAL_IMAGE_FOLDER,
-                        help="Path to the folder where the validation images will be stored.", nargs='?')
+                        help="Path to the folder where the validation images will be stored.",
+                        nargs='?')
 
     parser.add_argument("--val_mask_folder", type=str, default=DEFAULT_VAL_MASK_FOLDER,
-                        help="Path to the folder where the validation masks will be stored.", nargs='?')
+                        help="Path to the folder where the validation masks will be stored.",
+                        nargs='?')
 
     return parser.parse_args()
 
